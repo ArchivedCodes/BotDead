@@ -26,7 +26,28 @@ bot.add_event_handler(handleMessage, NewMessage(
     func=lambda e: e.is_private,
 ))
 
+async def handle_client(reader, writer):
+    await reader.read(1024)
+    response = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: 13\r\n"
+        "\r\n"
+        "OK"
+    )
+    writer.write(response.encode())
+    await writer.drain()
+    writer.close()
+    await writer.wait_closed()
+
+async def start_http_server():
+    server = await asyncio.start_server(handle_client, '0.0.0.0', environ.get("PORT", 8080))
+    print("HTTP server Started")
+    async with server:
+        await server.serve_forever()
+
 async def main():
+    asyncio.create_task(start_http_server())
     await bot.start(bot_token=environ.get("BOT_TOKEN"))
     print((await bot.get_me()).username)
     await bot.run_until_disconnected()
